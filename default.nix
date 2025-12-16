@@ -1,5 +1,15 @@
-{ callPackage }: {
+{ lib, callPackage }: lib.fix (this: {
   utils = callPackage ./utils {};
+
+  makeConfig = userMod: (lib.evalModules {
+    specialArgs.nix-make = this;
+    modules = [
+      (import ./module)
+      userMod
+    ];
+  }).config;
+
+  make = userMode: (this.makeConfig userMode).make;
 
   # TargetDef = Derivation | (Derivation // %output of mkTarget%)
   #
@@ -38,4 +48,4 @@
   # # also apply that substitution in outputs (like cmd's getOutput),
   # # instead of using make's weird `$*` to refer to the capture.
   # PatternRecipe = Recipe // { ... }
-}
+})
