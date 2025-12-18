@@ -54,7 +54,7 @@ in {
       type = types.attrs;
     };
 
-    defaultRecipe = mkOption {
+    defaultRule = mkOption {
       description = ''
         A function used to synthesize rules for targets which couldn't be matched against any other rule.
         It takes in the name of the target, and should return a rule.
