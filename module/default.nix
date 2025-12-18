@@ -61,12 +61,9 @@ in {
         By default, it will assume the target is a filename or directory and simply copy it; it does not check (at eval time, not build time) if the target exists however.
         For example, this works well for source files.
       '';
-      default = _: nix-make.utils.autoSrc;
-      defaultText = lib.literalExpression ''
-        _: nix-make.utils.autoSrc
-      '';
+      defaultText = "Throws an error about not knowing how to make the target.";
       example = lib.literalExpression ''
-        targetName: throw "Couldn't find target named ''${targetName}"
+        _: nix-make.utils.autoSrc
       '';
     };
 
@@ -77,6 +74,34 @@ in {
       visible = false;
     };
   };
+
+  config.defaultRule = mkOptionDefault (target: throw (
+    ''
+      need to make target '${target}', but no rule was found for it.
+
+      hint: in case '${target}' is a source file, you should add a rule
+            for it:
+                rules = {
+                  "${target}" = nix-make.utils.autoSrc;
+                };
+    '' +
+      optionalString (hasInfix "." target)
+    ''
+
+      note: you might want to use pattern rules (e.g. '%.c') to specify
+            source files:
+                rules = {
+                  "%.${last (splitString "." target)}" = nix-make.utils.autoSrc;
+                };
+    '' +
+    ''
+
+      note: alternatively, you can also set the `defaultRule` top-level
+            attribute if you want to change the default behavior when a
+            target isn't found:
+                defaultRule = targetName: nix-make.utils.autoSrc;
+    ''
+  ));
 
   # we define it here (instead of in `mkOption.default`) because we want to
   # use `mkDefault` (instead `mkOptionDefault` like it would be otherwise)
