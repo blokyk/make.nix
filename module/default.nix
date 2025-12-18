@@ -225,7 +225,11 @@ in {
               in makeRecipe ctx patternMatch.value.recipe
           else
               let ctx = baseCtx // {
-                ruleName = throw "Tried to use the name of an implicit recipe (which doesn't have one)";
+                ruleName = throw ''
+                  Recipe tried to use the name of the invoking rule,
+                  but it was invoked through the default rule, which
+                  doesn't have a name.
+                '';
               };
               in makeRecipe ctx (config.defaultRule target);
 
