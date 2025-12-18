@@ -1,4 +1,4 @@
-{ config, lib, nix-make, pkgs, ... }: with lib;
+{ config, lib, pkgs, ... }: with lib;
 let
   recipeType = with types; oneOf [(functionTo recipeType) package];
 in {
@@ -203,19 +203,25 @@ in {
         # to care about it.
         if (lib.isDerivation recipe)
           then recipe
-          else makeRecipe ctx (recipe ctx);
+        else if (lib.isPath recipe)
+          then throw "Calling 'make' or 'dep' on a raw path is not supported yet (see #3)."
+        else
+          makeRecipe ctx (recipe ctx);
 
       make = target:
         let
           baseCtx = {
             dep = make;
-            out = _: throw "sorry don't know how to handle multiple outputs right now";
+            out = _: throw "sorry don't know how to handle multiple outputs right now :(";
             name = toString target;
             root = config.root;
             derivationArgs = config.derivationArgs;
           };
         in
-        if (lib.isStringLike target)
+        # not isStringLike because derivations (and paths)
+        # should not be treated as target names.
+        # for paths specifically, see #3
+        if (lib.isString target)
           then
             let
               exactMatch = findExactRule target;
