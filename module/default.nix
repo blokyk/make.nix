@@ -1,6 +1,6 @@
 { config, lib, nix-make, pkgs, ... }: with lib;
 let
-  ruleType = with types; oneOf [(functionTo ruleType) package];
+  recipeType = with types; oneOf [(functionTo recipeType) package];
 in {
   options = {
     root = mkOption {
@@ -40,7 +40,7 @@ in {
       example = lib.literalExpression ''
         todo: write example of rules
       '';
-      type = types.attrsOf ruleType;
+      type = types.attrsOf recipeType;
     };
 
     derivationArgs = mkOption {
