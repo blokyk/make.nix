@@ -194,24 +194,57 @@ in {
             else bestMatch;
 
       makeRecipe = ctx: recipe:
-        # we iterate/recurse make so that we can nest recipe objects.
-        # for example, this allows us to do:
-        #   foo = { dep, ... }: run "cat ${dep "bar"}"
-        # where run = cmd: { ... }: pkgs.runCommand ...
-        # thus, we can have an arbitrary number of functions that
-        # can transparently request context without the consumer having
-        # to care about it.
-        if (lib.isDerivation recipe || lib.isStorePath recipe)
-          then recipe
-        else if (lib.isPath recipe)
-          then throw ''
-            Calling 'make' or 'dep' on a raw path is not supported yet (see #3).
-            The path was:
-              ${recipe}
-            which is not a derivation or store path.
-          ''
+        if (lib.isStringLike recipe) then
+          _makeStringLike ctx recipe
         else
+          # we iterate/recurse make so that we can nest recipe objects.
+          # for example, this allows us to do:
+          #   foo = { dep, ... }: run "cat ${dep "bar"}"
+          # where run = cmd: { ... }: pkgs.runCommand ...
+          # thus, we can have an arbitrary number of functions that
+          # can transparently request context without the consumer having
+          # to care about it.
           makeRecipe ctx (recipe ctx);
+
+      _makeFromTargetName = baseCtx: target:
+        assert lib.isString target;
+        let
+          exactMatch = findExactRule target;
+          patternMatch = findPatternRule target;
+        in
+          if (exactMatch != {})
+            then
+              let ctx = baseCtx // { ruleName = exactMatch.name; };
+              in makeRecipe ctx exactMatch.value
+          else if (patternMatch != {})
+            then
+              let ctx = baseCtx // {
+                ruleName = patternMatch.name;
+                capture = patternMatch.value.capture;
+              };
+              in makeRecipe ctx patternMatch.value.recipe
+          else
+              let ctx = baseCtx // {
+                ruleName = throw "Tried to use the name of an implicit recipe (which doesn't have one)";
+              };
+              in makeRecipe ctx (config.defaultRule target);
+
+      _makeStringLike = baseCtx: target:
+        # if it's just a derivation, return the derivation directly
+        if (lib.isDerivation target) then
+          target
+        else if (lib.isStorePath "${target}") then
+          # note: NOT `toString`! toString strips context (e.g. path-ness) from string-likes
+          "${target}"
+        else
+          throw ''
+            Calling 'make' or 'dep' on a ${lib.typeOf target} is not supported (yet).
+            The value was:
+              ${target} (or ${toString target})
+            which is not a derivation or store path.
+            For paths, see #3 and comment if you need it or want help, or open an
+            issue if that doesn't fit.
+          '';
 
       make = target:
         let
@@ -225,30 +258,11 @@ in {
         in
         # not isStringLike because derivations (and paths)
         # should not be treated as target names.
-        # for paths specifically, see #3
-        if (lib.isString target)
-          then
-            let
-              exactMatch = findExactRule target;
-              patternMatch = findPatternRule target;
-            in
-              if (exactMatch != {})
-                then
-                  let ctx = baseCtx // { ruleName = exactMatch.name; };
-                  in makeRecipe ctx exactMatch.value
-              else if (patternMatch != {})
-                then
-                  let ctx = baseCtx // {
-                    ruleName = patternMatch.name;
-                    capture = patternMatch.value.capture;
-                  };
-                  in makeRecipe ctx patternMatch.value.recipe
-              else
-                  let ctx = baseCtx // {
-                    ruleName = throw "Tried to use the name of an implicit recipe (which doesn't have one)";
-                  };
-                  in makeRecipe ctx (config.defaultRule target)
-          else
-            makeRecipe baseCtx target;
+        if (lib.isString target) then
+          _makeFromTargetName baseCtx target
+        else if (lib.isStringLike target) then
+          _makeStringLike baseCtx target
+        else
+          makeRecipe baseCtx target;
     in make;
 }
