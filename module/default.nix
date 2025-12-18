@@ -201,10 +201,15 @@ in {
         # thus, we can have an arbitrary number of functions that
         # can transparently request context without the consumer having
         # to care about it.
-        if (lib.isDerivation recipe)
+        if (lib.isDerivation recipe || lib.isStorePath recipe)
           then recipe
         else if (lib.isPath recipe)
-          then throw "Calling 'make' or 'dep' on a raw path is not supported yet (see #3)."
+          then throw ''
+            Calling 'make' or 'dep' on a raw path is not supported yet (see #3).
+            The path was:
+              ${recipe}
+            which is not a derivation or store path.
+          ''
         else
           makeRecipe ctx (recipe ctx);
 
