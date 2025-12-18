@@ -7,7 +7,7 @@ It's just like writing a few `stdenv.mkDerivation`, but without the headaches!
 ```nix
 with import <nixpkgs> {};
 let
-  nix-make = ...; # could be fetchFromGitHub for example
+  nix-make = callPackage /* fetchFromGitHub or w/e */ {};
   inherit (nix-make.utils) cp;
   inherit (nix-make.utils.stdenv) run;
 in
