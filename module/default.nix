@@ -113,33 +113,86 @@ in {
 
   config.make =
     let
-      singleAttr =
-        assert length (attrNames attrSet) == 1;
-        rec {
-          name = head (attrNames attrSet);
-          value = getAttr name attrSet;
-        };
-     allRules = config.rules;
+      filterAttrNames = f: filterAttrs (name: _: f name);
+      singleAttr = attrSet:
+        let
+          attrs = attrsToList attrSet;
+        in
+          assert length attrs == 1;
+          head attrs;
+
+      allRules = config.rules;
+
       findExactRule = target:
         let
-          matches = lib.filterAttrs
-            (ruleName: _: ruleName == target)
+          matches = filterAttrNames
+            (ruleName: ruleName == target)
             allRules;
         in
           if (matches == {})
             then {}
             else singleAttr matches;
+
       findPatternRule = target:
         let
-          matchesPattern = name: pattern: throw "not implemented";
-          matches = lib.filterAttrs
-            (pattern: _: matchesPattern target pattern)
-            allRules;
-          bestMatch = matches; # todo
+          # filters rules down to only the ones whose name is a pattern
+          patternRules = filterAttrNames (hasInfix "%") allRules;
+
+          headOrNull = list:
+            if (!lib.isList list || list == [])
+              then null
+              else head list;
+
+          # Pattern -> Regex
+          patternToRegex = pattern:
+            assert count (c: c == "%") (stringToCharacters pattern) <= 1
+              || throw "nix-make doesn't support patterns with multiple stems (%)";
+            replaceString "%" "(.*)" (escapeRegex pattern);
+
+          # Pattern -> TargetName -> [captures]
+          matchPattern = pattern: name:
+            builtins.match (patternToRegex pattern) name;
+
+          # { Pattern = Recipe } -> { Pattern = { "captures" :: str, "recipe" :: Recipe }}
+          allMatchInfo = mapAttrs
+            (pattern: recipe: {
+              capture = headOrNull (matchPattern pattern target);
+              inherit recipe;
+            })
+            patternRules;
+
+          # filters the results from `allMatchInfo` down to only the
+          # rules that matched against something (i.e. have a capture)
+          matches = filterAttrs
+            (_: info: info.capture != null)
+            allMatchInfo;
+
+          # we rank matches based on how specific they are.
+          # since we only allow one capture per pattern for now, we can just
+          # select the match that has the shortest capture. this gives a
+          # "score," where a lower score indicates a better match.
+          #
+          # for example, let's say we want to build target 'foo.o' and we
+          # have two rules that match: '%.o' and '%'.
+          # since '%.o' is more specific, it should be chosen over '%'.
+          # looking at the capture length, '%.o' only captures "foo", while
+          # '%' captures "foo.o", so '%.o' has a lower score than '%'.
+          # therefore, we would choose '%.o' over '%'.
+          scoreMatch = info:
+            stringLength info.value.capture;
+
+          # a target might match multiple pattern (e.g. '%' and '%.o'), so we
+          # need to sort these to select the best one (see `scoreMatch` above)
+          rankedMatches = sortOn
+            scoreMatch
+            (attrsToList matches);
+
+          bestMatch = head rankedMatches;
         in
           if (matches == {})
             then {}
-            else singleAttr bestMatch;
+            else bestMatch;
+
       makeRecipe = ctx: recipe:
         # we iterate/recurse make so that we can nest recipe objects.
         # for example, this allows us to do:
@@ -151,6 +204,7 @@ in {
         if (lib.isDerivation recipe)
           then recipe
           else makeRecipe ctx (recipe ctx);
+
       make = target:
         let
           baseCtx = {

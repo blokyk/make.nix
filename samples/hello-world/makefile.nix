@@ -4,7 +4,7 @@ let
 
   inherit (nix-make.utils.stdenv) run;
 in
-nix-make.makeConfig {
+nix-make.make {
   root = ./.;
 
   rules = {
@@ -12,12 +12,8 @@ nix-make.makeConfig {
       gcc ${dep "hello.o"} -o $out
     '';
 
-    "hello.o" = { dep, ... }: run ''
-      gcc -c ${dep "hello.c"} -o $out
+    "%.o" = { dep, capture, ... }: run ''
+      gcc -c ${dep "${capture}.c"} -o $out
     '';
-
-    # "%.o" = { dep, capture, ... }: run ''
-    #   gcc -c ${dep "${capture}.o"} -o $out
-    # '';
   };
 }
