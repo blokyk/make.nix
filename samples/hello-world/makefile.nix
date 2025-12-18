@@ -2,7 +2,7 @@ with import <nixpkgs> {};
 let
   nix-make = callPackage ../../. {};
 
-  inherit (nix-make.utils) src;
+  inherit (nix-make.utils) cp;
   inherit (nix-make.utils.stdenv) run;
 in
 nix-make.make {
@@ -17,6 +17,6 @@ nix-make.make {
       gcc -c ${dep "hello.c"} -o $out
     '';
 
-    "hello.c" = src ./hello.c;
+    "hello.c" = cp ./hello.c;
   };
 }

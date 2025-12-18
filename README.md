@@ -8,6 +8,7 @@ It's just like writing a few `stdenv.mkDerivation`, but without the headaches!
 with import <nixpkgs> {};
 let
   nix-make = ...; # could be fetchFromGitHub for example
+  inherit (nix-make.utils) cp;
   inherit (nix-make.utils.stdenv) run;
 in
 nix-make.make {
@@ -21,6 +22,8 @@ nix-make.make {
     "hello.o" = { dep, ... }: run ''
       gcc -c ${dep "hello.c"} -o $out
     '';
+
+    "hello.c" = cp ./hello.c;
   }
 }
 ```
@@ -57,7 +60,6 @@ Hello, world!
 Oh yeah btw, this is mostly for non-flake users; all y'all flakeys out there
 already got "flake apps" with your experiment, which I'm pretty sure care
 replicate most of this pretty easily, so I'm not sure you'd need this.
-
 
 ## What else?
 
