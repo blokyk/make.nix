@@ -63,7 +63,7 @@ in {
       '';
       defaultText = "Throws an error about not knowing how to make the target.";
       example = lib.literalExpression ''
-        _: nix-make.utils.autoSrc
+        _: innix.utils.autoSrc
       '';
     };
 
@@ -82,7 +82,7 @@ in {
       hint: in case '${target}' is a source file, you should add a rule
             for it:
                 rules = {
-                  "${target}" = nix-make.utils.autoSrc;
+                  "${target}" = innix.utils.autoSrc;
                 };
     '' +
       optionalString (hasInfix "." target)
@@ -91,7 +91,7 @@ in {
       note: you might want to use pattern rules (e.g. '%.c') to specify
             source files:
                 rules = {
-                  "%.${last (splitString "." target)}" = nix-make.utils.autoSrc;
+                  "%.${last (splitString "." target)}" = innix.utils.autoSrc;
                 };
     '' +
     ''
@@ -99,7 +99,7 @@ in {
       note: alternatively, you can also set the `defaultRule` top-level
             attribute if you want to change the default behavior when a
             target isn't found:
-                defaultRule = targetName: nix-make.utils.autoSrc;
+                defaultRule = targetName: innix.utils.autoSrc;
     ''
   ));
 
@@ -146,7 +146,7 @@ in {
           # Pattern -> Regex
           patternToRegex = pattern:
             assert count (c: c == "%") (stringToCharacters pattern) <= 1
-              || throw "nix-make doesn't support patterns with multiple stems (%)";
+              || throw "innix doesn't support patterns with multiple stems (%)";
             replaceString "%" "(.*)" (escapeRegex pattern);
 
           # Pattern -> TargetName -> [captures]

@@ -1,11 +1,11 @@
 with import <nixpkgs> {};
 let
-  nix-make = callPackage ../../. {};
+  innix = callPackage ../../. {};
 
-  inherit (nix-make.utils) autoSrc;
-  inherit (nix-make.utils.stdenv) run;
+  inherit (innix.utils) autoSrc;
+  inherit (innix.utils.stdenv) run;
 in
-nix-make.make {
+innix.make {
   root = ./.;
 
   rules = {

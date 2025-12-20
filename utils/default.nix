@@ -4,7 +4,7 @@
   /**
     Runs a given command in a basic environment (`stdenvNoCC`).
     If you want to run inside `stdenv` (e.g. to use `gcc`), then
-    use `nix-make.utils.stdenv.run` instead.
+    use `innix.utils.stdenv.run` instead.
 
     Note 1: You need to create or write to `$out` (or at least `touch` it),
     or the command will be treated as having failed.

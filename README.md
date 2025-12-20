@@ -1,17 +1,19 @@
-# `make.nix` / `nix-make`
+# `innix`
+
+*Using nix as an inner build system.* [^name-origin]
 
 A very basic piece of nix that makes using Nix as a build system pretty close
 to just writing a Makefile, except here you can use the full power of Nix.
-It's just like writing a few `stdenv.mkDerivation`, but without the headaches!
+It's just like writing a few `stdenv.mkDerivation`, but with 40% less headaches!
 
 ```nix
 with import <nixpkgs> {};
 let
-  nix-make = callPackage /* fetchFromGitHub or w/e */ {};
-  inherit (nix-make.utils) cp;
-  inherit (nix-make.utils.stdenv) run;
+  innix = callPackage /* fetchFromGitHub or w/e */ {};
+  inherit (innix.utils) cp;
+  inherit (innix.utils.stdenv) run;
 in
-nix-make.make {
+innix.make {
   root = ./.;
 
   rules = {
@@ -86,3 +88,11 @@ That's about it. It's mainly just a way to write a Makefile except:
 
 - It's Nix. You know why you're here. I like Nix, you like Nix, we like Nix.
   Need I say more?
+
+[^name-origin]: From jyn.dev's [I want a better action graph serialization](https://jyn.dev/i-want-a-better-action-graph-serialization/):
+    > The nix evaluator doesn’t allow querying its graph at all; nix has a very
+    > strange model where it never rebuilds because each change to your source
+    > files is a new “input-addressed derivation” and therefore requires a
+    > reconfigure. **This is the main reason it’s only used to package software,
+    > not as an "inner" build system**, because that reconfigure can be very
+    > slow.

@@ -2,7 +2,7 @@
   utils = callPackage ./utils {};
 
   makeConfig = userMod: (lib.evalModules {
-    specialArgs.nix-make = this;
+    specialArgs.innix = this;
     modules = [
       (import ./module)
       userMod
